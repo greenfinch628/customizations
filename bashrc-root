@@ -1,0 +1,35 @@
+# .bashrc
+
+# User specific aliases and functions
+
+alias rm='rm -i'
+alias cp='cp -i'
+alias mv='mv -i'
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+        . /etc/bashrc
+fi
+
+alias vi='/bin/vim'
+alias cls='clear'
+alias lsl='ls -l'
+alias lsla='ls -la'
+alias lsld='ls -ld'
+alias clsl='clear;ls -l'
+alias clsla='clear;ls -la'
+alias clsld='clear;ls -ld'
+alias clslt='clear;ls -lt'
+alias hg='clear;history | grep'
+alias psg='ps -ef | grep '
+alias envd='clear;env | grep DOCKER'
+alias cpsg='clear;ps -ef | grep '
+alias psme='ps -ef | grep $(whoami)'
+alias cpsme='clear;ps -ef | grep $(whoami)'
+alias cdcls='cd;clear;ls -l'
+alias cdv='clear;cd /vagrant'
+
+#red
+export PS1="\e[1;31m[\u@\h \w]\$ \e[m"
+
+export LS_COLORS='di=0;35:*.tar=01;31:*.jar=01;31:*.zip=01;31:*.tgz=01;31'

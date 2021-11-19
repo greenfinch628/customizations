@@ -1,0 +1,157 @@
+---
+- hosts: "{{ node }}"
+  become: yes
+# Configured to do a vagrant test device, scopuli and raspberry pi
+
+  vars:
+    node_apps_location: /usr/local/opt/node
+    os_type: "{{ hostvars[inventory_hostname].ansible_distribution }}"
+    color_dir: "{{ 'vim81' if ansible_distribution == 'Debian' else 'vim80' }}"
+#    os_dist: "{{ hostvars[inventory_hostname].ansible_distribution }}"
+#    os_maj_ver: "{{ hostvars[inventory_hostname].ansible_distribution_major_version }}"
+#    os min_ver: "{{ hostvars[inventory_hostname].ansible_distribution_version }}"
+
+  tasks:
+    - debug:
+        msg: 
+        - "ansible_distribution {{ hostvars[inventory_hostname].ansible_distribution }}"
+        - "major version {{ hostvars[inventory_hostname].ansible_distribution_major_version }}"
+        - "version {{ hostvars[inventory_hostname].ansible_distribution_version }}"
+        - "{{ hostvars[inventory_hostname].ansible_distribution }}"
+        
+# Global 
+# hosts
+    - name: save the original hosts file
+      shell: 'if [[ ! -f /etc/hosts.original ]]; then cp /etc/hosts /etc/hosts.original; fi'
+      register: result
+    - debug:
+        var: result
+
+    - name: Copy czysnet hosts to target
+      copy: "src=hosts-czysnet dest=/etc/hosts-czysnet"
+      register: result
+    - debug:
+         var: result
+    - debug:
+        msg: 'The hosts-czysnet has changed was {{ result.changed }}'
+
+    - name: Build hosts file starting with the original
+      shell: 'cat /etc/hosts.original > /etc/hosts'
+      when: result.changed
+
+    - name: Build hosts file appending contents of hosts-czysnet
+      shell: 'cat /etc/hosts-czysnet >> /etc/hosts'
+      when: result.changed
+      
+# vim color scheme
+    - name: Add my color scheme for vim.
+      copy: "src=mycolors.vim dest=/usr/share/vim/{{ color_dir }}/colors/mycolors.vim force=true"
+
+# terminal bell off
+    - name: Turn off terminal bell
+      lineinfile:
+        path: /etc/inputrc
+        line: "set bell-style none"
+        insertafter: "set output-meta on"
+        state: present
+        backup: yes
+      check_mode: no
+      register: result4inputrc
+
+# If it is a raspberry pi do this first
+    - name: Check to see if user pi exists
+      stat: path=/home/pi
+      register: pi_home
+      
+    - name: create user rczys 
+      user:
+        name: "{{ item.user }}"
+        state: present
+        shell: /bin/bash
+        password: "{{ item.password | password_hash('sha512') }}"
+        update_password: on_create
+        groups: "sudo,users"
+        append: yes
+      with_items:
+          - { user: rczys, password: bfd0288RRC$ }
+      when: pi_home.stat.exists
+
+    - name: add sudo entry for rczys
+      lineinfile:
+        path: /etc/sudoers 
+        line: "{{ item.line }}"
+      with_items:
+          - { line: 'rczys ALL=(ALL) NOPASSWD: ALL' }
+      when: pi_home.stat.exists
+
+    - name: create .ssh directory for rczys
+      file:
+        path: /home/{{ item.user }}/.ssh
+        state: directory
+        mode: "0700"
+      with_items:
+          - { user: rczys }
+      when: pi_home.stat.exists
+          
+    - name: Deploy SSH Public Key for rczys
+      authorized_key:
+        user: "{{ item.user }}"
+        state: present
+        key: "{{ lookup('file', '/home/{{ item.user }}/.ssh/id_rsa.pub') }}"
+      with_items:
+          - { user: rczys }
+      when: pi_home.stat.exists
+
+# user tasks - pi
+    - name: Check to see if user pi exists
+      stat: path=/home/pi
+      register: pi_home
+
+    - name: Customize pi aliases. Debian uses .bash_aliases
+      copy: "src=bash-aliases-rpi dest=/home/pi/.bash_aliases force=true"
+      when: pi_home.stat.exists
+      
+    - name: Customize pi .vimrc file
+      copy: "src=vimrc-user dest=/home/pi/.vimrc force=true"
+      when: pi_home.stat.exists
+
+# OS independent user tasks
+# user tasks - rczys
+    - name: Check to see if user rczys exists and update .bashrc if it is.
+      stat: path=/home/rczys
+      register: rczys_home
+
+    - name: Customize rczys .bashrc file.
+      copy: "src=bashrc-user dest=/home/rczys/.bashrc force=true"
+      when: rczys_home.stat.exists
+      
+    - name: Customize rczys .vimrc file
+      copy: "src=vimrc-user dest=/home/rczys/.vimrc force=true"
+      when: rczys_home.stat.exists
+
+# user tasks - root
+    - name: Check to see if root exists.
+      stat: path=/root
+      register: roots_home
+
+    - name: Customize root .bashrc file.
+      copy: "src=bashrc-root dest=/root/.bashrc force=true"
+      when: roots_home.stat.exists
+      
+    - name: Customize root .vimrc file
+      copy: "src=vimrc-root dest=/root/.vimrc force=true"
+      when: roots_home.stat.exists
+
+# user tasks - vagrant
+    - name: Check to see if user vagrant exists.
+      stat: path=/home/vagrant
+      register: vagrants_home
+
+    - name: Customize vagrant .bashrc file.
+      copy: "src=bashrc-user dest=/home/vagrant/.bashrc force=true"
+      when: vagrants_home.stat.exists
+      
+    - name: Customize vagrant .vimrc file
+      copy: "src=vimrc-user dest=/home/vagrant/.vimrc force=true"
+      when: vagrants_home.stat.exists
+      

@@ -1,0 +1,26 @@
+
+# Hosts on czysnet 11/08/2021
+192.168.53.1		netgear1 tychostation
+
+192.168.53.101		nauvoo-wired
+192.168.53.102		nauvoo nauvooftp
+
+192.168.53.105		canterbury-wired
+192.168.53.106		canterbury
+
+192.168.53.107		rocinante-wired
+192.168.53.108		rocinante
+
+192.168.53.111		scopuli-wired
+192.168.53.112		scopuli
+192.168.53.111		donnager-wired
+192.168.53.112		donnager
+
+192.168.53.113		raspberry-4b-wired raspberry-wired
+192.168.53.114		raspberry-4b raspberry
+
+192.168.53.115		narlikar-wired
+192.168.53.116		narlikar
+
+#192.168.53.107		czyscam-1
+#192.168.53.108		czyscam-2
